@@ -1,0 +1,7 @@
+---
+- name: Read-only Linux fleet audit
+  hosts: linux
+  gather_facts: true
+  become: false
+  roles:
+    - linux_audit
