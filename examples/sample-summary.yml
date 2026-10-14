@@ -1,0 +1,20 @@
+linux_audit_summary:
+  host: lab-ubuntu-01
+  os: Ubuntu 24.04
+  kernel: 6.x-generic
+  cpu_count: 2
+  memory_mb: 4096
+  root_filesystem:
+    - "Filesystem 1024-blocks Used Available Capacity Mounted on"
+    - "/dev/example 10000000 2000000 8000000 20% /"
+  failed_systemd_units: []
+  listening_sockets:
+    - "Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port"
+    - "tcp LISTEN 0 4096 127.0.0.1:22 0.0.0.0:*"
+  ssh_policy:
+    - "permitrootlogin no"
+    - "passwordauthentication no"
+  sshd_check_status: available
+  ipv4_forwarding: "0"
+
+# Demonstration only; these values are fabricated and not an expected baseline.
