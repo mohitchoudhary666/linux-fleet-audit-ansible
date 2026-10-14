@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.py[cod]
+inventories/hosts.ini
+inventories/*.vault
+vault-password-file
+reports/
+*.retry
+*.log
