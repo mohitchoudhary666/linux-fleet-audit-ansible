@@ -1,0 +1,82 @@
+---
+- name: Confirm managed host is Linux
+  ansible.builtin.assert:
+    that:
+      - ansible_system == "Linux"
+    fail_msg: "This audit role supports Linux hosts only."
+    quiet: true
+
+- name: Read failed systemd units
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - --failed
+      - --no-legend
+      - --plain
+  register: linux_audit_failed_units
+  changed_when: false
+  failed_when: false
+
+- name: Read listening local TCP and UDP sockets
+  ansible.builtin.command:
+    argv:
+      - ss
+      - -tuln
+  register: linux_audit_listeners
+  changed_when: false
+  failed_when: false
+
+- name: Read effective OpenSSH daemon settings
+  ansible.builtin.command:
+    argv:
+      - sshd
+      - -T
+  register: linux_audit_sshd
+  changed_when: false
+  failed_when: false
+
+- name: Read IPv4 forwarding state
+  ansible.builtin.command:
+    argv:
+      - sysctl
+      - -n
+      - net.ipv4.ip_forward
+  register: linux_audit_ip_forward
+  changed_when: false
+  failed_when: false
+
+- name: Read root filesystem capacity
+  ansible.builtin.command:
+    argv:
+      - df
+      - -P
+      - /
+  register: linux_audit_root_disk
+  changed_when: false
+  failed_when: false
+
+- name: Select effective SSH policy lines
+  ansible.builtin.set_fact:
+    linux_audit_ssh_policy: >-
+      {{ linux_audit_sshd.stdout_lines | default([])
+         | select('match', '^(permitrootlogin|passwordauthentication) ')
+         | list }}
+
+- name: Assemble per-host audit summary
+  ansible.builtin.set_fact:
+    linux_audit_summary:
+      host: "{{ inventory_hostname }}"
+      os: "{{ ansible_distribution }} {{ ansible_distribution_version }}"
+      kernel: "{{ ansible_kernel }}"
+      cpu_count: "{{ ansible_processor_vcpus | default('unknown') }}"
+      memory_mb: "{{ ansible_memtotal_mb | default('unknown') }}"
+      root_filesystem: "{{ linux_audit_root_disk.stdout_lines | default([]) }}"
+      failed_systemd_units: "{{ linux_audit_failed_units.stdout_lines | default([]) }}"
+      listening_sockets: "{{ linux_audit_listeners.stdout_lines | default([]) }}"
+      ssh_policy: "{{ linux_audit_ssh_policy }}"
+      sshd_check_status: "{{ 'available' if linux_audit_sshd.rc == 0 else 'unavailable' }}"
+      ipv4_forwarding: "{{ linux_audit_ip_forward.stdout | default('unavailable') | trim }}"
+
+- name: Print audit summary
+  ansible.builtin.debug:
+    var: linux_audit_summary
